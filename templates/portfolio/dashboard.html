@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+
+{% block title %}Портфель - CryptoFolio{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-pie-chart"></i> Мой портфель</h1>
+    <div>
+        <button id="refreshPrices" class="btn btn-outline-primary me-2">
+            <i class="bi bi-arrow-clockwise"></i> Обновить цены
+        </button>
+        <a href="{% url 'add_transaction' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Добавить
+        </a>
+    </div>
+</div>
+
+<!-- Общая статистика -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-light">
+            <div class="card-body text-center">
+                <h6 class="card-subtitle mb-2 text-muted">Инвестировано</h6>
+                <h4 class="card-title" id="totalInvested">${{ total_invested|floatformat:2 }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-light">
+            <div class="card-body text-center">
+                <h6 class="card-subtitle mb-2 text-muted">Текущая стоимость</h6>
+                <h4 class="card-title" id="totalValue">${{ total_current_value|floatformat:2 }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card {% if total_profit_loss >= 0 %}bg-success{% else %}bg-danger{% endif %} bg-opacity-10">
+            <div class="card-body text-center">
+                <h6 class="card-subtitle mb-2 text-muted">Прибыль/Убыток</h6>
+                <h4 class="card-title {% if total_profit_loss >= 0 %}profit{% else %}loss{% endif %}" id="totalPL">
+                    {% if total_profit_loss >= 0 %}+{% endif %}${{ total_profit_loss|floatformat:2 }}
+                    ({% if total_profit_loss_percent >= 0 %}+{% endif %}{{ total_profit_loss_percent|floatformat:2 }}%)
+                </h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Таблица активов -->
+{% if portfolios %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Активы</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Актив</th>
+                    <th class="text-end">Количество</th>
+                    <th class="text-end">Цена покупки</th>
+                    <th class="text-end">Текущая цена</th>
+                    <th class="text-end">Стоимость</th>
+                    <th class="text-end">Прибыль/Убыток</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for portfolio in portfolios %}
+                <tr data-portfolio-id="{{ portfolio.id }}">
+                    <td>
+                        {% if portfolio.cryptocurrency.image_url %}
+                        <img src="{{ portfolio.cryptocurrency.image_url }}" alt="" class="crypto-icon">
+                        {% endif %}
+                        <strong>{{ portfolio.cryptocurrency.symbol|upper }}</strong>
+                        <small class="text-muted">{{ portfolio.cryptocurrency.name }}</small>
+                    </td>
+                    <td class="text-end">{{ portfolio.total_quantity|floatformat:8 }}</td>
+                    <td class="text-end">${{ portfolio.avg_buy_price|floatformat:2 }}</td>
+                    <td class="text-end current-price">${{ portfolio.cryptocurrency.current_price|floatformat:2 }}</td>
+                    <td class="text-end current-value">${{ portfolio.current_value|floatformat:2 }}</td>
+                    <td class="text-end">
+                        <span class="{% if portfolio.profit_loss >= 0 %}profit{% else %}loss{% endif %} profit-loss">
+                            {% if portfolio.profit_loss >= 0 %}+{% endif %}${{ portfolio.profit_loss|floatformat:2 }}
+                        </span>
+                        <br>
+                        <small class="{% if portfolio.profit_loss_percent >= 0 %}profit{% else %}loss{% endif %} profit-loss-percent">
+                            ({% if portfolio.profit_loss_percent >= 0 %}+{% endif %}{{ portfolio.profit_loss_percent|floatformat:2 }}%)
+                        </small>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <div class="card-body text-center py-5">
+        <i class="bi bi-wallet2 display-1 text-muted"></i>
+        <h4 class="mt-3">Портфель пуст</h4>
+        <p class="text-muted">Добавьте первую криптовалюту, чтобы начать отслеживать</p>
+        <a href="{% url 'add_transaction' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Добавить криптовалюту
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('refreshPrices').addEventListener('click', function() {
+    const btn = this;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Обновление...';
+
+    fetch('{% url "api_update_prices" %}')
+        .then(response => response.json())
+        .then(data => {
+            // Обновляем общие показатели
+            document.getElementById('totalInvested').textContent = '$' + data.totals.total_invested.toFixed(2);
+            document.getElementById('totalValue').textContent = '$' + data.totals.total_current_value.toFixed(2);
+
+            const plSign = data.totals.total_profit_loss >= 0 ? '+' : '';
+            const plPercent = data.totals.total_profit_loss_percent.toFixed(2);
+            document.getElementById('totalPL').textContent =
+                plSign + '$' + data.totals.total_profit_loss.toFixed(2) + ' (' + plSign + plPercent + '%)';
+            document.getElementById('totalPL').className =
+                'card-title ' + (data.totals.total_profit_loss >= 0 ? 'profit' : 'loss');
+
+            // Обновляем каждую строку
+            data.portfolios.forEach(p => {
+                const row = document.querySelector(`tr[data-portfolio-id="${p.id}"]`);
+                if (row) {
+                    row.querySelector('.current-price').textContent = '$' + p.current_price.toFixed(2);
+                    row.querySelector('.current-value').textContent = '$' + p.current_value.toFixed(2);
+
+                    const plSign = p.profit_loss >= 0 ? '+' : '';
+                    const plClass = p.profit_loss >= 0 ? 'profit' : 'loss';
+
+                    row.querySelector('.profit-loss').textContent = plSign + '$' + p.profit_loss.toFixed(2);
+                    row.querySelector('.profit-loss').className = plClass + ' profit-loss';
+
+                    row.querySelector('.profit-loss-percent').textContent =
+                        '(' + plSign + p.profit_loss_percent.toFixed(2) + '%)';
+                    row.querySelector('.profit-loss-percent').className = plClass + ' profit-loss-percent';
+                }
+            });
+
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Обновить цены';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Обновить цены';
+        });
+});
+</script>
+{% endblock %}

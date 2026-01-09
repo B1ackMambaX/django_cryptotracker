@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% block title %}Добавить транзакцию - CryptoFolio{% endblock %}
+
+{% block content %}
+<h1 class="mb-4"><i class="bi bi-plus-circle"></i> Добавить транзакцию</h1>
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Шаг 1: Поиск криптовалюты -->
+        {% if not selected_crypto %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Шаг 1: Выберите криптовалюту</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="input-group mb-3">
+                        {{ search_form.query }}
+                        <button type="submit" name="search" class="btn btn-primary">
+                            <i class="bi bi-search"></i> Поиск
+                        </button>
+                    </div>
+                </form>
+
+                {% if search_results %}
+                <div class="list-group">
+                    {% for coin in search_results %}
+                    <form method="post" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="coingecko_id" value="{{ coin.id }}">
+                        <button type="submit" name="select_crypto" class="list-group-item list-group-item-action d-flex align-items-center">
+                            {% if coin.thumb %}
+                            <img src="{{ coin.thumb }}" alt="" class="crypto-icon">
+                            {% endif %}
+                            <div>
+                                <strong>{{ coin.symbol|upper }}</strong>
+                                <span class="text-muted">{{ coin.name }}</span>
+                            </div>
+                        </button>
+                    </form>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Шаг 2: Данные транзакции -->
+        {% if selected_crypto %}
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Шаг 2: Введите данные транзакции</h5>
+                <a href="{% url 'add_transaction' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Выбрать другую
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-4 p-3 bg-light rounded">
+                    {% if selected_crypto.image_url %}
+                    <img src="{{ selected_crypto.image_url }}" alt="" style="width: 48px; height: 48px;" class="me-3">
+                    {% endif %}
+                    <div>
+                        <h4 class="mb-0">{{ selected_crypto.name }}</h4>
+                        <span class="text-muted">{{ selected_crypto.symbol|upper }}</span>
+                        <span class="badge bg-primary ms-2">${{ selected_crypto.current_price|floatformat:2 }}</span>
+                    </div>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="coingecko_id" value="{{ selected_crypto.coingecko_id }}">
+                    {{ transaction_form.coingecko_id }}
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Тип транзакции</label>
+                            {{ transaction_form.transaction_type }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Количество</label>
+                            {{ transaction_form.quantity }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Цена за единицу (USD)</label>
+                        {{ transaction_form.price_per_unit }}
+                        <div class="form-text">
+                            Текущая цена: ${{ selected_crypto.current_price|floatformat:2 }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Заметки</label>
+                        {{ transaction_form.notes }}
+                    </div>
+
+                    {% if transaction_form.errors %}
+                    <div class="alert alert-danger">
+                        {% for field, errors in transaction_form.errors.items %}
+                            {% for error in errors %}{{ error }}{% endfor %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <button type="submit" name="submit_transaction" class="btn btn-primary btn-lg w-100">
+                        <i class="bi bi-check-lg"></i> Добавить транзакцию
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5><i class="bi bi-info-circle"></i> Подсказка</h5>
+                <p class="mb-2">1. Найдите криптовалюту по названию или символу (BTC, ETH)</p>
+                <p class="mb-2">2. Выберите тип транзакции: покупка или продажа</p>
+                <p class="mb-0">3. Укажите количество и цену покупки/продажи</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
