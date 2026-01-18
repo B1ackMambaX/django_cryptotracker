@@ -1,0 +1,14 @@
+.profit {
+    color: #198754;
+}
+.loss {
+    color: #dc3545;
+}
+.crypto-icon {
+    width: 24px;
+    height: 24px;
+    margin-right: 8px;
+}
+.navbar-brand i {
+    margin-right: 8px;
+}
