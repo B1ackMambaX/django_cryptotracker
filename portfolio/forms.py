@@ -39,7 +39,7 @@ class TransactionForm(forms.ModelForm):
 
     class Meta:
         model = Transaction
-        fields = ["transaction_type", "quantity", "price_per_unit", "notes"]
+        fields = ["transaction_type", "quantity", "price_per_unit", "transaction_date", "notes"]
         widgets = {
             "transaction_type": forms.Select(attrs={"class": "form-select"}),
             "quantity": forms.NumberInput(
@@ -56,6 +56,12 @@ class TransactionForm(forms.ModelForm):
                     "placeholder": "Цена за единицу (USD)",
                     "step": "0.00000001",
                     "min": "0.00000001",
+                }
+            ),
+            "transaction_date": forms.DateInput(
+                attrs={
+                    "class": "form-control",
+                    "type": "date",
                 }
             ),
             "notes": forms.Textarea(

@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.utils import timezone
 
 
 class Cryptocurrency(models.Model):
@@ -147,7 +148,8 @@ class Transaction(models.Model):
         max_digits=20, decimal_places=2, verbose_name="Общая сумма (USD)"
     )
     notes = models.TextField(blank=True, verbose_name="Заметки")
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата транзакции")
+    transaction_date = models.DateField(default=timezone.now, verbose_name="Дата транзакции")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
 
     class Meta:
         verbose_name = "Транзакция"

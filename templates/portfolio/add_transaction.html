@@ -84,11 +84,17 @@
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label">Цена за единицу (USD)</label>
-                        {{ transaction_form.price_per_unit }}
-                        <div class="form-text">
-                            Текущая цена: ${{ selected_crypto.current_price|floatformat:2 }}
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Цена за единицу (USD)</label>
+                            {{ transaction_form.price_per_unit }}
+                            <div class="form-text">
+                                Текущая цена: ${{ selected_crypto.current_price|floatformat:2 }}
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Дата транзакции</label>
+                            {{ transaction_form.transaction_date }}
                         </div>
                     </div>
 
