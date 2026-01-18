@@ -1,12 +1,13 @@
 from decimal import Decimal
 
+from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
 
 from .forms import CryptoSearchForm, TransactionForm, UserRegisterForm
-from .models import Cryptocurrency, Portfolio, Transaction
+from .models import Portfolio, Transaction
 from .services import CoinGeckoService
 
 
@@ -36,7 +37,11 @@ def dashboard(request):
 
     if portfolios.exists():
         cryptos = [p.cryptocurrency for p in portfolios]
-        CoinGeckoService.update_cryptocurrency_prices(cryptos)
+        success = CoinGeckoService.update_cryptocurrency_prices(cryptos)
+        if not success:
+            error = CoinGeckoService.get_last_error()
+            if error:
+                messages.warning(request, f"Не удалось обновить цены: {error}")
         portfolios = Portfolio.objects.filter(
             user=request.user, total_quantity__gt=0
         ).select_related("cryptocurrency")
@@ -75,6 +80,12 @@ def add_transaction(request):
             if search_form.is_valid():
                 query = search_form.cleaned_data["query"]
                 search_results = CoinGeckoService.search_crypto(query)
+                if not search_results:
+                    error = CoinGeckoService.get_last_error()
+                    if error:
+                        messages.error(request, error)
+                    else:
+                        messages.info(request, "Криптовалюта не найдена")
 
         elif "select_crypto" in request.POST:
             coingecko_id = request.POST.get("coingecko_id")
@@ -84,12 +95,21 @@ def add_transaction(request):
                 transaction_form = TransactionForm(
                     user=request.user, initial={"coingecko_id": coingecko_id}
                 )
+            else:
+                error = CoinGeckoService.get_last_error()
+                if error:
+                    messages.error(request, error)
 
         elif "submit_transaction" in request.POST:
             transaction_form = TransactionForm(request.POST, user=request.user)
+            coingecko_id = request.POST.get("coingecko_id")
+            if coingecko_id:
+                selected_crypto = CoinGeckoService.get_or_create_cryptocurrency(
+                    coingecko_id
+                )
+
             if transaction_form.is_valid():
-                coingecko_id = transaction_form.cleaned_data["coingecko_id"]
-                crypto = CoinGeckoService.get_or_create_cryptocurrency(coingecko_id)
+                crypto = selected_crypto
 
                 if crypto:
                     portfolio, created = Portfolio.objects.get_or_create(
@@ -115,14 +135,22 @@ def add_transaction(request):
 @login_required
 def transaction_list(request):
     """История транзакций пользователя."""
+    sort_by = request.GET.get("sort", "-transaction_date")
+    allowed_sorts = ["transaction_date", "-transaction_date", "total_amount", "-total_amount"]
+    if sort_by not in allowed_sorts:
+        sort_by = "-transaction_date"
+
     transactions = (
         Transaction.objects.filter(portfolio__user=request.user)
         .select_related("portfolio__cryptocurrency")
-        .order_by("-created_at")
+        .order_by(sort_by)
     )
 
     return render(
-        request, "portfolio/transaction_list.html", {"transactions": transactions}
+        request, "portfolio/transaction_list.html", {
+            "transactions": transactions,
+            "current_sort": sort_by,
+        }
     )
 
 
@@ -133,15 +161,18 @@ def api_update_prices(request):
         user=request.user, total_quantity__gt=0
     ).select_related("cryptocurrency")
 
+    error = None
     if portfolios.exists():
         cryptos = [p.cryptocurrency for p in portfolios]
-        CoinGeckoService.update_cryptocurrency_prices(cryptos)
+        success = CoinGeckoService.update_cryptocurrency_prices(cryptos)
+        if not success:
+            error = CoinGeckoService.get_last_error()
 
     portfolios = Portfolio.objects.filter(
         user=request.user, total_quantity__gt=0
     ).select_related("cryptocurrency")
 
-    data = {"portfolios": [], "totals": {}}
+    data = {"portfolios": [], "totals": {}, "error": error}
 
     total_invested = Decimal("0")
     total_current_value = Decimal("0")

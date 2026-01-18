@@ -16,19 +16,29 @@
         <table class="table table-hover mb-0">
             <thead class="table-light">
                 <tr>
-                    <th>Дата</th>
+                    <th>
+                        <a href="?sort={% if current_sort == '-transaction_date' %}transaction_date{% else %}-transaction_date{% endif %}" class="text-decoration-none text-dark">
+                            Дата
+                            {% if current_sort == '-transaction_date' %}<i class="bi bi-caret-down-fill"></i>{% elif current_sort == 'transaction_date' %}<i class="bi bi-caret-up-fill"></i>{% endif %}
+                        </a>
+                    </th>
                     <th>Тип</th>
                     <th>Актив</th>
                     <th class="text-end">Количество</th>
                     <th class="text-end">Цена</th>
-                    <th class="text-end">Сумма</th>
+                    <th class="text-end">
+                        <a href="?sort={% if current_sort == '-total_amount' %}total_amount{% else %}-total_amount{% endif %}" class="text-decoration-none text-dark">
+                            Сумма
+                            {% if current_sort == '-total_amount' %}<i class="bi bi-caret-down-fill"></i>{% elif current_sort == 'total_amount' %}<i class="bi bi-caret-up-fill"></i>{% endif %}
+                        </a>
+                    </th>
                     <th>Заметки</th>
                 </tr>
             </thead>
             <tbody>
                 {% for transaction in transactions %}
                 <tr>
-                    <td>{{ transaction.created_at|date:"d.m.Y H:i" }}</td>
+                    <td>{{ transaction.transaction_date|date:"d.m.Y" }}</td>
                     <td>
                         {% if transaction.transaction_type == 'BUY' %}
                         <span class="badge bg-success">Покупка</span>
