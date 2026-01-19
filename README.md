@@ -2,7 +2,7 @@
 
 Веб-сервис для трекинга криптовалютного портфеля с автоматическим получением актуальных котировок из CoinGecko API. Позволяет отслеживать прибыль и убытки по каждой криптовалюте и по портфелю в целом.
 
-**Ссылка на рабочий проект:** [https://ваш-логин.pythonanywhere.com](https://ваш-логин.pythonanywhere.com)
+**Ссылка на рабочий проект:** [https://b1ackmambax.pythonanywhere.com](https://b1ackmambax.pythonanywhere.com)
 
 ## Возможности
 
@@ -63,7 +63,7 @@ pythonProject/
 
 1. **Клонируйте репозиторий:**
    ```bash
-   git clone https://github.com/ваш-юзернейм/cryptofolio.git
+   git clone https://github.com/b1ackmambax/cryptofolio.git
    cd cryptofolio
    ```
 
@@ -112,7 +112,3 @@ pythonProject/
 - Поиска криптовалют
 - Получения актуальных цен
 - Загрузки информации о монетах (название, иконка)
-
-## Автор
-
-Студенческий проект по дисциплине "Веб-разработка на Python"

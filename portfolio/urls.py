@@ -18,5 +18,4 @@ urlpatterns = [
     # API для AJAX
     path("api/prices/update/", views.api_update_prices, name="api_update_prices"),
     path("api/crypto/search/", views.api_search_crypto, name="api_search_crypto"),
-    path('api/crypto/search/', views.api_search_crypto, name='api_search_crypto'),
 ]
